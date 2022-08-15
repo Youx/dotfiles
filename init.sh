@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# {{{ Helpers
+
 COLOR_RED='\033[00;31m'
 COLOR_GREEN='\033[00;32m'
 COLOR_RESET='\033[0m'
@@ -14,7 +16,12 @@ function print_ko()
     echo "${COLOR_RED}✗${COLOR_RESET} $1"
 }
 
-# Install
+SCRIPT_DIR=$(dirname $0)
+DATA_CONFIG="$SCRIPT_DIR/config"
+HOME_CONFIG="$HOME/.config"
+
+# }}}
+# {{{ Check installed software
 
 missing_command=0
 function check_command()
@@ -37,26 +44,35 @@ if [ $missing_command -eq 1 ]; then
     exit 1;
 fi
 
-echo "Copying config files"
+# }}}
+# {{{ Copy files
+
 # Create .config dir
-if [ ! -d "$HOME/.config" ]; then
-    echo "Creating directory ~/.config"
-    mkdir "$HOME/.config"
+if [ ! -d "$HOME_CONFIG" ]; then
+    echo "Creating directory $HOME_CONFIG"
+    mkdir "$HOME_CONFIG"
 fi
 
+echo "Copying config files"
 function copy_config()
 {
-    if [ -e "$HOME/.config/$1" ]; then
-        echo "Overwrite config $1?"
-        gum confirm && rm -fr "$HOME/.config/$1" && cp -r ".config/$1" "$HOME/.config" && print_ok "copied .config/$1"
+    in_conf="$DATA_CONFIG/$1"
+    out_conf="$HOME_CONFIG/$1"
+    if [ -e "$out_conf" ]; then
+        echo "Overwrite $out_conf?"
+        gum confirm && rm -fr "$out_conf" && cp -r "$in_conf" "$HOME_CONFIG" && print_ok "copied $in_conf to $out_conf"
     else
-        cp -r ".config/$1" "$HOME/.config/" && print_ok "copied .config/$1"
+        cp -r "$in_conf" "$HOME_CONFIG" && print_ok "copied $in_conf to $out_conf"
     fi
 }
 
-for i in "$(ls .config/)"; do
+for i in "$(ls $DATA_CONFIG)"; do
     copy_config "$i"
 done
 
-# Initialize neovim plugins
+# }}}
+# {{{ Setup software
+# {{{ Initialize neovim plugins
 gum spin --title "Setting up Neovim" -- nvim --headless -c 'autocmd User PackerComplete quitall' -c 'PackerSync'
+# }}}
+# }}}
